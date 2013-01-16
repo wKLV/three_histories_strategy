@@ -3,7 +3,7 @@ var staticurl = '/static', controls, bases = [], lastTime;
 $(document).ready(function(){
 	var renderer = new THREE.WebGLRenderer({antialias:true});
 	var body = document.body, html = document.documentElement;
-	renderer.setSize( document.body.clientWidth, Math.max( body.scrollHeight, body.offsetHeight, 
+	renderer.setSize( document.body.clientWidth, Math.max( body.scrollHeight, body.offsetHeight,
             html.clientHeight, html.scrollHeight, html.offsetHeight ) );
 	document.body.appendChild(renderer.domElement);
 	renderer.setClearColorHex(0x111111, 1.0);
@@ -15,12 +15,12 @@ $(document).ready(function(){
 	stats.domElement.style.position	= 'absolute';
 	stats.domElement.style.bottom	= '0px';
 	document.body.appendChild( stats.domElement );
-	
+
 	$(document).add($('<div style="position:absolute; bottom:80px; id="coll"/>'))
-    
+
 	Physijs.scripts.worker = staticurl+'/libs/physijs_worker.js';
 	Physijs.scripts.ammo = staticurl+'/libs/ammo.js';
-	
+
 	var scene = new THREE.Scene;
 
 	var camera = new THREE.PerspectiveCamera(
@@ -30,7 +30,7 @@ $(document).ready(function(){
 	    10000       // Far
 	);
 	camera.position.set(0,0 ,64);
-	
+
 	controls = new THREE.TrackballControls( camera );
 
 	controls.rotateSpeed = 1.0;
@@ -49,19 +49,19 @@ $(document).ready(function(){
 		renderer.render(scene, camera);
 		stats.update()
 		controls.update();
-		
+
 		var dt = time - lastTime;
 		lastTime = time;
-		
+
 		map.update(dt);
-		
+
 		requestAnimationFrame(render);
 	}
-	
+
 	//controls.addEventListener('change', render );
 
 	scene.add(camera);
-	
+
 	var directionallight = new THREE.DirectionalLight(0xffffff, 1.5);
 	directionallight.position.set(1, -1, 3);
 	scene.add(directionallight);
@@ -76,12 +76,12 @@ $(document).ready(function(){
 	directionallight.shadowBias = -.001
 	directionallight.shadowMapWidth = directionallight.shadowMapHeight = 2048;
 	directionallight.shadowDarkness = .7;
-	
+
 	map = new GAME.Map({scene:scene});
-	
-	
+
+
 	THREEx.WindowResize(renderer, camera);
-	
+
 	requestAnimationFrame(render);
 
 });
@@ -98,17 +98,17 @@ Array.prototype.remove = function(from, to) {
 
 GAME.Map = function(parameters) {
 	var scene = parameters.scene;
-	
+
 	var teams = {};
 	var bases = [];
 	var obstacles = [];
 	var routes = {};
-	
+
 	function addTeam(team){
 		teams[team.teamName] = team;
 		addBase(team.base);
 	}
-	
+
 	function addBase(base){
 		bases.push(base);
 		scene.add(base.mesh)
@@ -126,11 +126,11 @@ GAME.Map = function(parameters) {
 	//Load Tech
 	$.getJSON(staticurl+'/tech.js', function(data){
 		$.each(data, function(i,v){
-			var s = v.speed, w = v.weaponry, sh = v.shield, l = v.life, time = v.time, n = i;
+			var s = v.speed, w = v.weaponry, sh = v.shield, l = v.life, m= v.model, time = v.time, n = i;
 			for (var i=0; i<s.length; i++){
-				GAME.TECH.add({name:n,speed:s[i],weaponry:w[i],shield:sh[i],life:l[i],time:time, points:Math.pow(i+1,10)*101, level:i})
+				GAME.TECH.add({name:n,speed:s[i],weaponry:w[i],shield:sh[i],life:l[i],model: m,time:time, points:Math.pow(i+1,10)*101, level:i})
 			}
-		});	
+		});
 		// Load map
 		$.getJSON(staticurl+'/maps/basic.js', function(data){
 			var bas = data.bases, planets = data.planets, nebulas = data.nebulas;
@@ -152,16 +152,20 @@ GAME.Map = function(parameters) {
 			v.updateTech(dt/1000);
 			var list = v.iterateBases(function(base) {return base.updateReleases(dt/1000) });
 			$.each(list, function(k,release) {
-				var base = release.base, t = release.ship; 
+				var base = release.base, t = release.ship;
 				var ship = createShip(v,t,[new THREE.Vector3(0,-20,0),new THREE.Vector3(-50,-20,0), new THREE.Vector3(0,0,0)]);
 				ship.mesh.position.addSelf(base.mesh.position).addSelf(new THREE.Vector3(0,0,10));
-				addShip(ship);	
+				addShip(ship);
 			});
 		});
 		$.each(routes, function(r,ships){
 			var r = ships.route, ships = ships.ships, rems = [];
 			$.each(ships, function(i,ship){
-				var s = ship.mesh;
+                //DESTROY
+                if(ship.life <= 0) scene.remove(ship.mesh)
+                else {
+	            //MOVING TIME
+                var s = ship.mesh;
 				var sp = s.position.clone()
 				var v = sp.subSelf(r[0]).clone().normalize();
 				var ds = v.multiplyScalar(dt*ship.model.tech.speed/1000);
@@ -173,7 +177,19 @@ GAME.Map = function(parameters) {
 					if(ship.route.length)
 						addShip(ship);
 				}
-			});
+                //BATTLE TIME
+                var d = -1, sh;
+			    $.each(routes, function(r, ships){
+                    $.each(ships.ships, function(i, v){
+                        if(v.mesh.position.distanceTo(ship.mesh.position)<d && d !== -1 && v !== ship)
+                            sh = v, d = v.mesh.position.distanceTo(ship.mesh.position);
+                        else if(d === -1 && v !== ship) sh = v, d = v.mesh.position.distanceTo(ship.mesh.position);
+                    });
+                });
+                if(d < 5)
+                    sh.life -= ship.model.tech.weaponry.damage;
+                }
+            });
 			$.each(rems, function(i,v){ships.remove(v-i)})
 		});
 	}

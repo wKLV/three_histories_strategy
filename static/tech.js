@@ -6,7 +6,8 @@
 		             ],
 		"shield":[10,15,20],
 		"life":[1000,1000,1000],
-		"time": 0
+		"time": 0,
+		"model":"cube"
 },
 "hummer":{
 	"speed":[7,12,16],
@@ -16,7 +17,8 @@
 		       ],
 	"shield":[2,3,4],
 	"life":[50,75,150],
-	"time": 3
+	"time": 3,
+	"model": "triangle"
 },
 "eagle":{
 	"speed":[3,5,7],
@@ -26,6 +28,7 @@
 		       ],
 	"shield":[5,6,7],
 	"life":[200,300,500],
-	"time": 15
+	"time": 15,
+	"model": "cylinder"
 }
 }

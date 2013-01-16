@@ -1,5 +1,5 @@
 # Django settings for juego project.
-PATH = "/pjs/3 dreams of black/juego/" 
+PATH = "/pjs/juego/" 
  
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
