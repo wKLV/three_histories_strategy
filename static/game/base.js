@@ -15,8 +15,8 @@ GAME.Team.prototype.createBase = function(parameters){
 	var Base = function(team, parameters){
 		this.team = team;
 		this.releases = {};
-		this.type = parameters.type; //TODO
-		
+		this.model = GAME.TECH.getLevel("mothership", 0);
+
 		var releases = this.releases;
 		$.each(this.team.tech, function(i,v) {
 			releases[i] = {tech:v, toNext:0}
@@ -24,12 +24,8 @@ GAME.Team.prototype.createBase = function(parameters){
 	};
 
 	Base.prototype.createVisual = function(){
-		var geo = new THREE.CubeGeometry(10,10,10);
-
-		var mat = new THREE.MeshPhongMaterial({color:this.team.color});
-		var mesh = new THREE.Mesh(geo, mat);
-		return mesh;
-	}
+	    return GAME.Resources.getObj3D(this.model.name);
+    }
 
 	Base.prototype.updateReleases = function(dt){
 		var list = [], tech = this.team.tech, base = this;
@@ -43,7 +39,7 @@ GAME.Team.prototype.createBase = function(parameters){
 		return list;
 	}
 
-	
+
 	var b = new Base(this, parameters);
 	this.bases.push(b);
 	return b;
@@ -67,15 +63,13 @@ GAME.Team.prototype.updateTech = function(dt){
 	});
 }
 
-
-
 function createTeam(teamName, parameters, scene){
 	var team = new GAME.Team(teamName, parameters);
-	
+
 	team.base = team.createBase({})
-	team.base.mesh = team.base.createVisual();
-	team.base.mesh.position.set(parameters.pos[0], parameters.pos[1], 0);
-	
+    team.base.mesh = team.base.createVisual();
+    team.base.mesh.position.set(parameters.pos[0], parameters.pos[1], 0);
+
 	return team;
 }
 

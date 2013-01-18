@@ -35,7 +35,7 @@ GAME.Obstacle.prototype.createVisual = function(){
 function createPlanet(name, parameters, scene){
 	parameters.type = PLANET;
 	var planet = new GAME.Obstacle(name, parameters);
-	
+
 	planet.mesh = planet.createVisual();
 	planet.mesh.position.set(parameters.pos[0], parameters.pos[1], 0);
 	return planet;
@@ -44,10 +44,9 @@ function createPlanet(name, parameters, scene){
 function createNebula(name, parameters, scene){
 	parameters.type = NEBULA;
 	var nebula = new GAME.Obstacle(name, parameters);
-	
+
 	nebula.mesh = nebula.createVisual();
 	nebula.mesh.position.set(parameters.pos[0], parameters.pos[1], 0);
-	
+
 	return nebula;
 }
-

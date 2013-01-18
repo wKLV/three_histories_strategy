@@ -1,4 +1,4 @@
-var staticurl = '/static', controls, bases = [], lastTime;
+var staticurl = '/static', controls, bases = [], lastTime, ready = false;;
 
 $(document).ready(function(){
 	var renderer = new THREE.WebGLRenderer({antialias:true});
@@ -52,8 +52,13 @@ $(document).ready(function(){
 
 		var dt = time - lastTime;
 		lastTime = time;
+<<<<<<< HEAD
 
 		map.update(dt);
+=======
+        if(ready)
+		    map.update(dt);
+>>>>>>> 052a85b... Load models for graphics
 
 		requestAnimationFrame(render);
 	}
@@ -77,9 +82,13 @@ $(document).ready(function(){
 	directionallight.shadowMapWidth = directionallight.shadowMapHeight = 2048;
 	directionallight.shadowDarkness = .7;
 
+<<<<<<< HEAD
 	map = new GAME.Map({scene:scene});
 
 
+=======
+    map = new GAME.Map({scene:scene});
+>>>>>>> 052a85b... Load models for graphics
 	THREEx.WindowResize(renderer, camera);
 
 	requestAnimationFrame(render);
@@ -126,26 +135,35 @@ GAME.Map = function(parameters) {
 	//Load Tech
 	$.getJSON(staticurl+'/tech.js', function(data){
 		$.each(data, function(i,v){
+<<<<<<< HEAD
 			var s = v.speed, w = v.weaponry, sh = v.shield, l = v.life, m= v.model, time = v.time, n = i;
 			for (var i=0; i<s.length; i++){
 				GAME.TECH.add({name:n,speed:s[i],weaponry:w[i],shield:sh[i],life:l[i],model: m,time:time, points:Math.pow(i+1,10)*101, level:i})
+=======
+			var s = v.speed, w = v.weaponry, sh = v.shield, l = v.life, time = v.time, n = i, m = v.model;
+			GAME.Resources.loadObj3D(n, "models/"+m+".js");
+            for (var i=0; i<s.length; i++){
+				GAME.TECH.add({name:n,speed:s[i],weaponry:w[i],shield:sh[i],life:l[i],time:time, points:Math.pow(i+1,10)*101, level:i})
+>>>>>>> 052a85b... Load models for graphics
 			}
 		});
 		// Load map
-		$.getJSON(staticurl+'/maps/basic.js', function(data){
-			var bas = data.bases, planets = data.planets, nebulas = data.nebulas;
+        GAME.Resources.addReady(function() {
+            $.getJSON(staticurl+'/maps/basic.js', function(data){
+                var bas = data.bases, planets = data.planets, nebulas = data.nebulas;
 
-			$.each(bas, function(i,v){
-				addTeam(createTeam(i,v, this));
-			});
-			$.each(planets, function(i,v){
-				addObst(createPlanet(i,v, this));
-			});
-			$.each(nebulas, function(i,v){
-				addObst(createNebula(i,v, this));
-			});
-
-		});
+                $.each(bas, function(i,v){
+                    addTeam(createTeam(i,v, this));
+                });
+                $.each(planets, function(i,v){
+                    addObst(createPlanet(i,v, this));
+                });
+                $.each(nebulas, function(i,v){
+                    addObst(createNebula(i,v, this));
+                });
+		    });
+            ready = true;
+        });
 	});
 	this.update = function(dt){
 		$.each(teams, function(i,v) {
@@ -154,7 +172,11 @@ GAME.Map = function(parameters) {
 			$.each(list, function(k,release) {
 				var base = release.base, t = release.ship;
 				var ship = createShip(v,t,[new THREE.Vector3(0,-20,0),new THREE.Vector3(-50,-20,0), new THREE.Vector3(0,0,0)]);
+<<<<<<< HEAD
 				ship.mesh.position.addSelf(base.mesh.position).addSelf(new THREE.Vector3(0,0,10));
+=======
+				ship.mesh.position.add(base.mesh.position).add(new THREE.Vector3(0,0,10));
+>>>>>>> 052a85b... Load models for graphics
 				addShip(ship);
 			});
 		});
@@ -167,11 +189,11 @@ GAME.Map = function(parameters) {
 	            //MOVING TIME
                 var s = ship.mesh;
 				var sp = s.position.clone()
-				var v = sp.subSelf(r[0]).clone().normalize();
+				var v = sp.sub(r[0]).clone().normalize();
 				var ds = v.multiplyScalar(dt*ship.model.tech.speed/1000);
-				s.position.subSelf(ds);
+				s.position.sub(ds);
 				// It arrives
-				if(sp.subSelf(ds).length() <= 0.5){
+				if(sp.sub(ds).length() <= 0.5){
 					rems.push(i)
 					ship.route = ship.route.splice(1);
 					if(ship.route.length)
@@ -202,7 +224,7 @@ GAME.Map = function(parameters) {
 			stars.vertices.push(new THREE.Vector3(rand(i/10), rand(i/10), rand(i/20)-scale/10));
 		var mat = new THREE.ParticleBasicMaterial({color:0xFFFF00});
 		var stars = new THREE.ParticleSystem(stars, mat);
-		stars.position.addSelf(pos);
+		stars.position.add(pos);
 		scene.add(stars);
 	}
 	for(var i=0; i<5; i++)
