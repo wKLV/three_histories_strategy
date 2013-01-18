@@ -18,7 +18,7 @@
 	"shield":[2,3,4],
 	"life":[50,75,150],
 	"time": 3,
-	"model": "triangle"
+	"model": "thorusknot"
 },
 "eagle":{
 	"speed":[3,5,7],
