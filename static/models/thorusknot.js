@@ -37,32 +37,27 @@
 
 	"materials" :
 	{
-		"Material_11": {
-			"type"    : "MeshPhongMaterial",
+	"Material_10": {
+			"type"    : "MeshBasicMaterial",
 			"parameters"  : {
-				"color"  : 16777215,
-				"ambient"  : 5122165,
-				"emissive"  : 9200404,
-				"specular"  : 5152486,
-				"shininess" : 30,
-				"bumpScale"  : 1,
 				"reflectivity"  : 1,
 				"transparent" : false,
 				"opacity" : 1,
 				"wireframe" : false,
 				"wireframeLinewidth" : 1
 			}
+			}
 		}
-	},
+	,
 
 	"textures" :
 	{
-	
+
 	},
 
 	"fogs" :
 	{
-	
+
 	},
 
 	"transform" :

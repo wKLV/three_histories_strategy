@@ -1,13 +1,13 @@
 GAME.Team = function(teamName, parameters){
-	this.teamName = teamName;
-	this.color = parseInt(parameters.color,16);
-	this.tech = {};
-	this.bases = [];
+    this.teamName = teamName;
+    this.color = parseInt(parameters.color,16);
+    this.tech = {};
+    this.bases = [];
 
-	var tech = this.tech;
-	$.each(GAME.TECH.all(), function(i,v) {
-		tech[i] = {tech:(v[0]), toNext:0};
-	});
+    var tech = this.tech;
+    $.each(GAME.TECH.all(), function(i,v) {
+        tech[i] = {tech:(v[0]), toNext:0};
+    });
 
 }
 
@@ -23,26 +23,28 @@ GAME.Team.prototype.createBase = function(parameters){
 		});
 	};
 
-	Base.prototype.createVisual = function(){
-	    return GAME.Resources.getObj3D(this.model.name);
+    Base.prototype.createVisual = function(){
+        var g = GAME.Resources.getObj3D(this.model.name);
+        if (g) g.children[0].material.color = new THREE.Color(this.team.color)
+        return g;
     }
 
-	Base.prototype.updateReleases = function(dt){
-		var list = [], tech = this.team.tech, base = this;
-		$.each(this.releases, function(i,v){
-			v.toNext += dt;
-			if(tech[i].tech.time <= v.toNext && tech[i].tech.time > 0){
-				list.push({ship:v.tech, base:base});
-				v.toNext = 0;
-			}
-		});
-		return list;
-	}
+    Base.prototype.updateReleases = function(dt){
+        var list = [], tech = this.team.tech, base = this;
+        $.each(this.releases, function(i,v){
+            v.toNext += dt;
+            if(tech[i].tech.time <= v.toNext && tech[i].tech.time > 0){
+                list.push({ship:v.tech, base:base});
+                v.toNext = 0;
+            }
+        });
+        return list;
+    }
 
 
-	var b = new Base(this, parameters);
-	this.bases.push(b);
-	return b;
+    var b = new Base(this, parameters);
+    this.bases.push(b);
+    return b;
 }
 
 GAME.Team.prototype.iterateBases = function(f){

@@ -42,10 +42,6 @@
 		"Material_8": {
 			"type"    : "MeshPhongMaterial",
 			"parameters"  : {
-				"color"  : 13193664,
-				"ambient"  : 10930937,
-				"emissive"  : 8794931,
-				"specular"  : 1118481,
 				"shininess" : 30,
 				"bumpScale"  : 1,
 				"reflectivity"  : 1,

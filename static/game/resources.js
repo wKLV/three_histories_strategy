@@ -29,7 +29,9 @@ GAME.Resources = function(){
             if (resources[name]){
                 var r = resources[name], obj3D = new THREE.Object3D();
                 $.each(r.children, function(i,v){
-                    obj3D.add(v.clone())
+                    var o = v.clone();
+                    o.material = v.material.clone();
+                    obj3D.add(o);
                 });
                 return obj3D;
             }
