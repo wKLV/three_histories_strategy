@@ -2,6 +2,9 @@ var staticurl = '/static', controls, bases = [], lastTime,
 ready = false, map, camera, projector = new THREE.Projector();
 
 $(document).ready(function(){
+    $("#baseUI").load(staticurl+"/icons/baseUI.svg");
+    $("#baseUI").hide();
+
     var renderer = new THREE.WebGLRenderer({antialias:true});
     var body = document.body, html = document.documentElement;
     renderer.setSize( document.body.clientWidth, Math.max( body.scrollHeight, body.offsetHeight,
@@ -82,7 +85,10 @@ $(document).ready(function(){
 	THREEx.WindowResize(renderer, camera);
 
     $(document).click(map.click);
-	requestAnimationFrame(render);
+    $(document).mousemove(map.mouseMove);
+    $(document).mousedown(map.mousedown);
+    $(document).mouseup(map.mouseup);
+    requestAnimationFrame(render);
 
 });
 
@@ -101,11 +107,13 @@ GAME.Map = function(parameters) {
 
     var teams = {},
     bases = [],
+    basesMesh = [],
     ids = 0,
     obstacles = [],
     ships = {},
-    routA = [new THREE.Vector3(-40,-40,10)];
-
+    routes = {},
+    routeslines = {},
+    mode = "hummer";
 
     function addTeam(team){
         teams[team.teamName] = team;
@@ -114,6 +122,7 @@ GAME.Map = function(parameters) {
 
     function addBase(base){
         bases.push(base);
+        basesMesh.push(base.mesh.children[0]);
         scene.add(base.mesh)
     }
     function addObst(obst){
@@ -133,6 +142,7 @@ GAME.Map = function(parameters) {
             for (var i=0; i<s.length; i++){
                 GAME.TECH.add({name:n,speed:s[i],weaponry:w[i], weapontype: wt, shield:sh[i],life:l[i],time:time, points:Math.pow(i+1,10)*101, level:i})
             }
+            routes[n] = [new THREE.Vector3(-40,-40,-10)];
         });
         // Load map
         GAME.Resources.addReady(function() {
@@ -157,7 +167,14 @@ GAME.Map = function(parameters) {
             ready = true;
         });
     });
-    var lines = [], teamMats = {};
+    var lines = [], teamMats = {},
+        mouseOver = new THREE.Mesh(
+            new THREE.PlaneGeometry(15,15),
+            new THREE.MeshPhongMaterial({color:"#ffffff"})
+        );
+    mouseOver.material.opacity=0.5, mouseOver.material.transparent=true;
+    scene.add(mouseOver);
+    mouseOver.visible = false;
     this.update = function(dt){
         $.each(lines, function(i,v){
             scene.remove(v);
@@ -170,7 +187,7 @@ GAME.Map = function(parameters) {
                 var base = release.base, t = release.ship;
                 ids ++;
                 if(v.teamName === "A")
-                    var ship = createShip(ids, v,t,routA.slice(0));
+                    var ship = createShip(ids, v,t,routes[t.tech.name].slice(0));
                 else
                     var ship = createShip(ids, v,t,[new THREE.Vector3(40,40,10),new THREE.Vector3(0,-20,0),new THREE.Vector3(-50,-20,0), new THREE.Vector3(0,0,0)]);
                 ship.mesh.position.add(base.mesh.position).add(new THREE.Vector3(0,0,10));
@@ -236,23 +253,60 @@ GAME.Map = function(parameters) {
 
     function repaintRoute(){
         var geo = new THREE.Geometry();
-        $.each(routA, function(i, p){
+        $.each(routes[mode], function(i, p){
             geo.vertices.push(new THREE.Vertex(p));
         });
-        line = new THREE.Line(geo);
+        scene.remove(routeslines[mode]);
+        routeslines[mode] = line = new THREE.Line(geo);
         scene.add(line);
     }
 
-    this.click = function(event){
-        event.preventDefault();
-
+    function unProject(event, objs){
         var vector = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
         projector.unprojectVector( vector, camera );
 
         var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
 
-        var intersects = raycaster.intersectObjects([plane]);
-        routA.push(intersects[0].point);
+        return raycaster.intersectObjects(objs);
+    }
+
+    this.click = function(event){
+        event.preventDefault();
+
+        var point = unProject(event, [plane])[0].point;
+        routes[mode].push(point);
         repaintRoute();
+
+    }
+    this.mousedown = function(event){
+        var base = unProject(event, basesMesh)[0]
+        if(base){
+            $("#baseUI").show().css("left", event.clientX-175+"px").css("top", event.clientY+"px");
+        }
+    }
+    this.mouseup = function(event){
+        $("#baseUI").hide();
+    }
+
+    this.mouseMove = function(event){
+        event.preventDefault();
+
+        var obj = unProject(event, basesMesh)[0];
+        if(obj){
+            obj = obj.object;
+            mouseOver.visible = true;
+            mouseOver.position = obj.parent.position.clone().add(new THREE.Vector3(0,0,-10)).add(obj.position);
+        }
+        else{
+            mouseOver.visible = false;
+        }
+    }
+    this.setMode = function(mod){
+        mode = mod;
+        routes[mode] = [new THREE.Vector3(-40,-40,-10)]
     }
 }
+
+GAME.UI = function(pressed){
+    map.setMode(pressed);
+};
