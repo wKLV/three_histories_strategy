@@ -6,27 +6,19 @@ GAME.Ship = function(id, team, model, route){
 
 function createAI(tech, thish){
     var chase = false, check, attacking;
-    switch(tech.tactic){
-    case "hummer":
-        chase = true;
-        break;
-    case "onetotone":
-        chase = true;
-        break;
-    }
     function checkDistance(sh1, sh2, d){
         return sh1.mesh.position.distanceTo(sh2.mesh.position) < d
     }
     switch(tech.weapontype.area){
     case "single":
-        attacking = {distance:-1}
+        attacking = {distance:-1}, chase = false;
         check = function(ship){
             if(ship.team !== thish.team && (checkDistance(ship, thish, attacking.distance) || attacking.distance === -1))
                 attacking = {distance: ship.mesh.position.distanceTo(thish.mesh.position), ship:ship}
         }
         break;
     case "sphere":
-        attacking = {};
+        attacking = {}, chase = true;
         check = function(ship){
             if(checkDistance(ship, thish, tech.weapontype.distance))
                 attacking[ship.id] = ship;
@@ -40,23 +32,34 @@ function createAI(tech, thish){
             check(ship);
         },
         returnResult: function(){
+            var enemy, attack = false;
             switch(tech.weapontype.area){
                 case "single":
-                    if(attacking.ship && attacking.distance < tech.weapontype.distance) attacking = [attacking.ship];
+                    if(attacking.ship && attacking.distance < tech.weapontype.distance)
+                        enemy = attacking.ship, attack = true, attacking = [attacking.ship];
                     else attacking = [];
                     break;
                 case "sphere":
+                    // Atack?
                     var all = true;
                     $.each(attacking, function(i,v){
                         if(v.team !== thish.team){
                             all = false;
+                            enemy = v;
                             return false
                         }
                     });
-                    if (all) attacking = [];
+                    if (all)
+                        attacking = [];
+                    else attack = true;
                     break;
             }
-                return attacking;
+            if(chase && attack){
+                // Change route to enemies
+                var nr = [thish.route[0], enemy];
+                thish.route = nr.concat(thish.route.splice(1));
+            }
+            return attacking;
         },
         reset: function(){
             switch(tech.weapontype.area){

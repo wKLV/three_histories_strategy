@@ -189,8 +189,12 @@ GAME.Map = function(parameters) {
             var s = ship.mesh;
             var sp = s.position.clone()
             if(r[1]){
-                var v = sp.sub(r[1]).clone().normalize();
-                var ds = v.multiplyScalar(dt*ship.model.tech.speed/1000);
+                var v, ds;
+                if(r[1] instanceof THREE.Vector3)
+                    v = sp.sub(r[1]).clone().normalize()
+                else if (r[1] instanceof GAME.Ship)
+                    v = sp.sub(r[1].mesh.position).clone().normalize()
+                ds = v.multiplyScalar(dt*ship.model.tech.speed/1000);
                 s.position.sub(ds);
                 // It arrives
                 if(sp.sub(ds).length() <= 0.5){
