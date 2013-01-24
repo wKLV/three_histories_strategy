@@ -5,20 +5,20 @@ GAME.Ship = function(id, team, model, route){
 }
 
 function createAI(tech, thish){
-    var chase = false, check, attacking;
+    var check, attacking;
     function checkDistance(sh1, sh2, d){
         return sh1.mesh.position.distanceTo(sh2.mesh.position) < d
     }
     switch(tech.weapontype.area){
     case "single":
-        attacking = {distance:-1}, chase = false;
+        attacking = {distance:-1};
         check = function(ship){
             if(ship.team !== thish.team && (checkDistance(ship, thish, attacking.distance) || attacking.distance === -1))
                 attacking = {distance: ship.mesh.position.distanceTo(thish.mesh.position), ship:ship}
         }
         break;
     case "sphere":
-        attacking = {}, chase = true;
+        attacking = {};
         check = function(ship){
             if(checkDistance(ship, thish, tech.weapontype.distance))
                 attacking[ship.id] = ship;
@@ -49,14 +49,13 @@ function createAI(tech, thish){
                             return false
                         }
                     });
-                    if (all)
-                        attacking = [];
+                    if (all) attacking = [];
                     else attack = true;
                     break;
             }
-            if(chase && attack){
+            if(thish.route[0].tactics === GAME.Node.CHASE && attack){
                 // Change route to enemies
-                var nr = [thish.route[0], enemy];
+                var nr = [thish.route[0], new GAME.Node(enemy, GAME.Node.CHASE)];
                 thish.route = nr.concat(thish.route.splice(1));
             }
             return attacking;

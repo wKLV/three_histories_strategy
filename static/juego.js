@@ -4,6 +4,8 @@ ready = false, map, camera, projector = new THREE.Projector();
 $(document).ready(function(){
     $("#baseUI").load(staticurl+"/icons/baseUI.svg");
     $("#baseUI").hide();
+    $("#nodeUI").load(staticurl+"/icons/nodeUI.svg");
+    $("#nodeUI").hide();
 
     var renderer = new THREE.WebGLRenderer({antialias:true});
     var body = document.body, html = document.documentElement;
@@ -102,6 +104,19 @@ Array.prototype.remove = function(from, to) {
   return this.push.apply(this, rest);
 };
 
+GAME.Node = function(target, tactics){
+    this.target = target, this.tactics = tactics, this.ships = {}, this.length = 0;;
+}
+GAME.Node.prototype.addShip = function(ship){
+        if(!this.ships[ship.id])
+            this.ships[ship.id] = ship.id, this.length ++;
+        return this;
+}
+
+GAME.Node.CHASE = "chase",
+GAME.Node.WAIT5 = "wait5",
+GAME.Node.WAIT10 = "wait10";
+
 GAME.Map = function(parameters) {
     var scene = parameters.scene;
 
@@ -111,7 +126,11 @@ GAME.Map = function(parameters) {
     ids = 0,
     obstacles = [],
     ships = {},
-    routes = {},
+    routes = this.routes = {},
+    enmyroutes = [new GAME.Node(new THREE.Vector3(40,40,10), GAME.Node.WAIT10),
+                                           new GAME.Node(new THREE.Vector3(0,-20,0), GAME.Node.WAIT5),
+                                           new GAME.Node(new THREE.Vector3(-50,-20,0), GAME.Node.CHASE),
+                                           new GAME.Node(new THREE.Vector3(0,0,0), GAME.Node.CHASE)]
     routeslines = {},
     mode = "hummer";
 
@@ -142,7 +161,7 @@ GAME.Map = function(parameters) {
             for (var i=0; i<s.length; i++){
                 GAME.TECH.add({name:n,speed:s[i],weaponry:w[i], weapontype: wt, shield:sh[i],life:l[i],time:time, points:Math.pow(i+1,10)*101, level:i})
             }
-            routes[n] = [new THREE.Vector3(-40,-40,-10)];
+            routes[n] = [new GAME.Node(new THREE.Vector3(-40,-40,-10), GAME.Node.WAIT10)];
         });
         // Load map
         GAME.Resources.addReady(function() {
@@ -189,7 +208,7 @@ GAME.Map = function(parameters) {
                 if(v.teamName === "A")
                     var ship = createShip(ids, v,t,routes[t.tech.name].slice(0));
                 else
-                    var ship = createShip(ids, v,t,[new THREE.Vector3(40,40,10),new THREE.Vector3(0,-20,0),new THREE.Vector3(-50,-20,0), new THREE.Vector3(0,0,0)]);
+                    var ship = createShip(ids, v,t, enmyroutes.slice(0));                                        ;
                 ship.mesh.position.add(base.mesh.position).add(new THREE.Vector3(0,0,10));
                 addShip(ship);
             });
@@ -198,6 +217,10 @@ GAME.Map = function(parameters) {
             var r = ship.route;
             //DESTROY
             if(ship.life <= 0){
+                 if(ship.route[1].ships[ship.id]){
+                     ship.route[1].length --;
+                    delete ship.route[1].ships[ship.id]
+                 }
                  delete ships[id];
                  scene.remove(ship.mesh);
             }
@@ -207,15 +230,27 @@ GAME.Map = function(parameters) {
             var sp = s.position.clone()
             if(r[1]){
                 var v, ds;
-                if(r[1] instanceof THREE.Vector3)
-                    v = sp.sub(r[1]).clone().normalize()
-                else if (r[1] instanceof GAME.Ship)
-                    v = sp.sub(r[1].mesh.position).clone().normalize()
+                if(r[1].target instanceof THREE.Vector3)
+                    v = sp.sub(r[1].target).clone().normalize()
+                else if (r[1].target instanceof GAME.Ship)
+                    v = sp.sub(r[1].target.mesh.position).clone().normalize()
                 ds = v.multiplyScalar(dt*ship.model.tech.speed/1000);
                 s.position.sub(ds);
                 // It arrives
                 if(sp.sub(ds).length() <= 0.5){
-                    ship.route = ship.route.splice(1);
+                    r[1].addShip(ship)
+                    if((r[1].length >= 5 && r[1].tactics === GAME.Node.WAIT5) ||
+                      r[1].length >=10 && r[1].tactics === GAME.Node.WAIT10 ||
+                      r[1].tactics === GAME.Node.CHASE){
+                        r[1].ships[ship.id] = false;
+                        var all = true;
+                        $.each(r[1].ships, function(i,v){
+                            if(v) all = false;
+                            return all;
+                        });
+                        if(all) r[1].ships = {}, r[1].length = 0;
+                        ship.route = ship.route.splice(1);
+                    }
                 }
             }
             //BATTLE TIME
@@ -251,10 +286,10 @@ GAME.Map = function(parameters) {
     for(var i=0; i<5; i++)
         this.paintBackground(new THREE.Vector3(rand(500),rand(500),rand(500)), rand(i*10000));
 
-    function repaintRoute(){
+    this.repaintRoute = function(){
         var geo = new THREE.Geometry();
         $.each(routes[mode], function(i, p){
-            geo.vertices.push(new THREE.Vertex(p));
+            geo.vertices.push(p.target);
         });
         scene.remove(routeslines[mode]);
         routeslines[mode] = line = new THREE.Line(geo);
@@ -270,22 +305,23 @@ GAME.Map = function(parameters) {
         return raycaster.intersectObjects(objs);
     }
 
-    this.click = function(event){
-        event.preventDefault();
-
-        var point = unProject(event, [plane])[0].point;
-        routes[mode].push(point);
-        repaintRoute();
-
-    }
     this.mousedown = function(event){
+        event.preventDefault();
         var base = unProject(event, basesMesh)[0]
         if(base){
-            $("#baseUI").show().css("left", event.clientX-175+"px").css("top", event.clientY+"px");
-        }
+             $("#baseUI").show().css("left", event.clientX-175+"px").css("top", event.clientY+"px");
+       }
+        else{
+            $("#nodeUI").show().css("left", event.clientX-175+"px").css("top", event.clientY+"px");
+
+            lastNode.point = unProject(event, [plane])[0].point;
+                    }
+
     }
     this.mouseup = function(event){
         $("#baseUI").hide();
+        $("#nodeUI").hide();
+
     }
 
     this.mouseMove = function(event){
@@ -303,10 +339,15 @@ GAME.Map = function(parameters) {
     }
     this.setMode = function(mod){
         mode = mod;
-        routes[mode] = [new THREE.Vector3(-40,-40,-10)]
+        routes[mode] = [new GAME.Node(new THREE.Vector3(-40,-40,-10), GAME.Node.WAIT10)]
     }
 }
 
 GAME.UI = function(pressed){
     map.setMode(pressed);
 };
+var lastNode = {};
+GAME.UInode = function(pressed){
+    map.routes[mode].push(new GAME.Node(lastNode.point, pressed));
+    map.repaintRoute();
+}
